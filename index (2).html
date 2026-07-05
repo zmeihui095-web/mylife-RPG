@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1117">
+<title>觉醒者 · 生命进化系统</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#0f1117;--card:#1a1d29;--card2:#222637;--border:#2d3148;
+  --text:#e8eaf0;--muted:#8a8fa3;--accent:#ffb454;--accent2:#6ee7b7;
+  --hp:#ff6b6b;--mp:#5b8def;--gold:#ffd166;--wis:#a78bfa;
+  --sys-blue:#4a9eff;--sys-glow:rgba(74,158,255,.15);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--text)}
+
+.app{display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;overflow:hidden}
+.tab-content{flex:1;overflow-y:auto;padding:0 16px 90px;scroll-behavior:smooth}
+.tab-content::-webkit-scrollbar{width:3px}
+.tab-content::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+
+/* 顶栏 */
+.topbar{padding:12px 16px 8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.topbar .info{display:flex;align-items:center;gap:8px}
+.topbar .lv{background:linear-gradient(135deg,#4a9eff,#2d7de0);color:#fff;font-weight:700;padding:4px 10px;border-radius:6px;font-size:12px;letter-spacing:1px}
+.topbar .player-name{font-size:13px;color:var(--sys-blue);font-weight:600}
+.topbar .title-badge{font-size:10px;color:var(--accent);background:rgba(255,180,84,.12);padding:2px 6px;border-radius:3px}
+.topbar .exp-bar{width:90px;height:6px;background:#0a0c12;border-radius:3px;overflow:hidden}
+.topbar .exp-fill{height:100%;background:linear-gradient(90deg,var(--sys-blue),#7eb8ff);transition:width .4s}
+.topbar .streak{font-size:12px;color:var(--accent)}
+
+/* 属性 */
+.attrs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px 0}
+.attr{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;display:flex;align-items:center;gap:8px}
+.attr .ico{font-size:20px}
+.attr .right{flex:1}
+.attr .name{font-size:11px;color:var(--muted)}
+.attr .lvrow{display:flex;align-items:center;justify-content:space-between}
+.attr .lv-num{font-size:14px;font-weight:700}
+.attr.hp .lv-num{color:var(--hp)}.attr.mp .lv-num{color:var(--mp)}.attr.gold .lv-num{color:var(--gold)}.attr.wis .lv-num{color:var(--wis)}
+.attr .bar-wrap{height:4px;background:#0a0c12;border-radius:2px;overflow:hidden;margin-top:4px}
+.attr .bar-fill{height:100%;border-radius:2px;transition:width .4s}
+.attr.hp .bar-fill{background:var(--hp)}.attr.mp .bar-fill{background:var(--mp)}.attr.gold .bar-fill{background:var(--gold)}.attr.wis .bar-fill{background:var(--wis)}
+.attr .exp-label{font-size:9px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+
+/* 系统风格提示 */
+.sys-hint{background:var(--sys-glow);border:1px solid rgba(74,158,255,.3);border-radius:8px;padding:10px 14px;margin:4px 0 10px;font-size:12px;color:var(--sys-blue)}
+.sys-hint .sys-tag{font-size:10px;background:rgba(74,158,255,.2);color:var(--sys-blue);padding:1px 4px;border-radius:2px;font-weight:600;margin-right:4px}
+.sys-hint .conds{margin-top:6px;font-size:11px;color:var(--muted)}
+.sys-hint .cond{display:flex;align-items:center;gap:4px;margin-top:2px}
+.sys-hint .cond .tag{font-size:10px;padding:2px 6px;border-radius:3px}
+.sys-hint .cond .tag.met{background:rgba(110,231,183,.2);color:var(--accent2)}
+.sys-hint .cond .tag.unmet{background:rgba(255,107,107,.2);color:var(--hp)}
+
+/* 章节卡片 */
+.chapter-card{background:var(--card);border:1px solid rgba(74,158,255,.3);border-radius:10px;padding:14px;margin-bottom:8px}
+.chapter-card .ch-title{font-size:14px;font-weight:600;color:var(--sys-blue);margin-bottom:6px}
+.chapter-card .ch-title .num{color:var(--accent);font-size:12px;margin-right:4px}
+.chapter-card .narrative{font-size:12px;color:var(--muted);line-height:1.7;font-style:italic;border-left:2px solid rgba(74,158,255,.2);padding-left:10px;margin-bottom:8px}
+.chapter-card .narrative p{margin-bottom:4px}
+.chapter-card .goal{font-size:11px;color:var(--accent)}
+.chapter-card .unlock{font-size:11px;color:var(--accent2);margin-top:4px}
+
+/* 随机任务区 */
+.random-zone{margin-bottom:12px}
+.random-zone .zone-title{font-size:13px;color:var(--accent2);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.random-zone .zone-title .blink{animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.random-task{
+  background:var(--card);border:1px dashed rgba(110,231,183,.4);border-radius:10px;
+  padding:12px;margin-bottom:6px;transition:.2s;cursor:pointer;
+}
+.random-task.done{border-style:solid;border-color:rgba(110,231,183,.5);background:rgba(110,231,183,.06)}
+.random-task .sys-label{font-size:10px;color:var(--sys-blue);font-weight:600;margin-bottom:2px}
+.random-task .tname{font-size:13px;font-weight:500}
+.random-task.done .tname{color:var(--accent2);text-decoration:line-through;opacity:.7}
+.random-task .desc{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5}
+.random-task .reward-row{font-size:11px;margin-top:4px;display:flex;justify-content:space-between}
+.random-task .xp-tag{font-weight:700}
+.random-task .attr-tag{color:var(--muted)}
+
+/* 固定任务（副本风格） */
+.dungeon-task{
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:12px;margin-bottom:6px;transition:.2s;cursor:pointer;
+}
+.dungeon-task.done{border-color:rgba(110,231,183,.4);background:rgba(110,231,183,.06)}
+.dungeon-task .top{display:flex;align-items:center;gap:8px}
+.dungeon-task .check{width:22px;height:22px;border-radius:6px;border:2px solid #3a3f55;display:flex;align-items:center;justify-content:center;font-size:14px;transition:.2s;flex-shrink:0}
+.dungeon-task.done .check{background:var(--accent2);border-color:var(--accent2);color:#1a1a1a}
+.dungeon-task .tname{font-size:14px;font-weight:500;flex:1}
+.dungeon-task.done .tname{color:var(--accent2);text-decoration:line-through;opacity:.7}
+.dungeon-task .sys-label{font-size:9px;color:var(--sys-blue);font-weight:600;flex-shrink:0}
+.dungeon-task .desc{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5}
+.dungeon-task .reward{font-size:11px;margin-top:4px;color:var(--accent2)}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
+.dungeon-task.justDone,.random-task.justDone{animation:pop .3s}
+
+/* 日程表 */
+.schedule-wrap{padding:4px 0}
+.schedule{width:100%;border-collapse:collapse;font-size:13px}
+.schedule td{padding:7px 6px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+.schedule .time{color:var(--accent);font-variant-numeric:tabular-nums;min-width:42px;font-weight:500}
+.schedule .task-name{color:var(--text)}
+.schedule .tag{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600}
+.tag.hp{background:rgba(255,107,107,.15);color:var(--hp)}.tag.mp{background:rgba(91,141,239,.15);color:var(--mp)}.tag.gold{background:rgba(255,209,102,.15);color:var(--gold)}.tag.wis{background:rgba(167,139,250,.15);color:var(--wis)}.tag.rest{background:rgba(138,143,163,.1);color:var(--muted)}.tag.sys{background:var(--sys-glow);color:var(--sys-blue)}
+
+/* 剧情Tab */
+.story-chapter{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px;cursor:pointer;transition:.2s}
+.story-chapter.locked{opacity:.4;cursor:default;border-style:dashed}
+.story-chapter.current{border-color:rgba(74,158,255,.4);background:var(--sys-glow)}
+.story-chapter .ch-num{font-size:11px;color:var(--accent)}
+.story-chapter .ch-title{font-size:14px;font-weight:600;margin-top:2px}
+.story-chapter .ch-title.unlocked{color:var(--sys-blue)}
+.story-chapter .ch-title.locked{color:var(--muted)}
+.story-chapter .ch-snippet{font-size:12px;color:var(--muted);margin-top:4px;font-style:italic;line-height:1.6}
+.story-chapter .ch-badge{font-size:10px;padding:2px 6px;border-radius:3px;margin-top:4px}
+.story-chapter .ch-badge.unlocked{background:rgba(74,158,255,.15);color:var(--sys-blue)}
+.story-chapter .ch-badge.locked{background:rgba(255,255,255,.05);color:var(--muted)}
+
+/* 章节详情弹窗 */
+.chapter-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:110;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.3s}
+.chapter-overlay.show{opacity:1;pointer-events:auto}
+.chapter-overlay .modal{background:var(--card);border:2px solid var(--sys-blue);border-radius:16px;padding:20px;text-align:center;max-width:320px;max-height:80vh;overflow-y:auto}
+.chapter-overlay .modal .big{font-size:36px;margin-bottom:4px}
+.chapter-overlay .modal .sys-tag{font-size:11px;color:var(--sys-blue);font-weight:600;background:var(--sys-glow);padding:2px 8px;border-radius:3px;display:inline-block;margin-bottom:6px}
+.chapter-overlay .modal .title{font-size:16px;font-weight:700;color:var(--sys-blue)}
+.chapter-overlay .modal .narrative{font-size:13px;color:var(--muted);line-height:1.7;font-style:italic;text-align:left;border-left:2px solid var(--sys-blue);padding-left:10px;margin-top:10px}
+.chapter-overlay .modal .narrative p{margin-bottom:6px}
+.chapter-overlay .modal .info-row{font-size:12px;color:var(--accent);margin-top:10px}
+.chapter-overlay .modal .btn{margin-top:14px;background:var(--sys-blue);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px}
+
+/* 提醒弹窗 */
+.reminder-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:105;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:.3s}
+.reminder-overlay.show{opacity:1;pointer-events:auto}
+.reminder-overlay .card{background:var(--card);border:1px solid var(--sys-blue);border-radius:12px 12px 0 0;max-width:480px;width:100%;padding:16px}
+.reminder-overlay .card .sys-header{font-size:12px;color:var(--sys-blue);font-weight:600;margin-bottom:4px}
+.reminder-overlay .card .sys-header .sys-icon{font-size:14px;margin-right:4px}
+.reminder-overlay .card .narrative{font-size:13px;color:var(--text);line-height:1.7;font-style:italic;margin-top:8px;border-left:2px solid var(--sys-blue);padding-left:10px}
+.reminder-overlay .card .narrative p{margin-bottom:4px}
+.reminder-overlay .card .actions{display:flex;gap:8px;margin-top:12px}
+.reminder-overlay .card .actions .btn-primary{background:var(--sys-blue);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px}
+.reminder-overlay .card .actions .btn-skip{background:transparent;border:1px solid var(--border);color:var(--muted);padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px}
+
+/* 升级弹窗 */
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:100;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.3s}
+.overlay.show{opacity:1;pointer-events:auto}
+.overlay .modal{background:var(--card);border:2px solid var(--sys-blue);border-radius:16px;padding:24px;text-align:center;max-width:300px}
+.overlay .modal .sys-label{font-size:10px;color:var(--sys-blue);font-weight:600;background:var(--sys-glow);padding:2px 8px;border-radius:3px;display:inline-block;margin-bottom:6px}
+.overlay .modal .big{font-size:36px;margin-bottom:4px}
+.overlay .modal .title{font-size:16px;font-weight:700;color:var(--sys-blue)}
+.overlay .modal .desc{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6}
+.overlay .modal .btn{margin-top:14px;background:var(--sys-blue);color:#fff;border:none;padding:10px 24px;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px}
+
+/* 底部导航 */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:var(--card);border-top:1px solid var(--border);display:flex;height:56px}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9px;color:var(--muted);cursor:pointer;transition:.2s;gap:1px}
+.nav-item.active{color:var(--sys-blue)}
+.nav-item .nav-ico{font-size:18px}
+
+/* 历史 */
+.history-card{background:var(--card2);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.history-card .date{color:var(--muted);font-variant-numeric:tabular-nums}
+.history-card .cnt{color:var(--accent2);font-weight:600}
+.history-card .xp{color:var(--wis);font-weight:600;font-size:12px}
+
+/* Toast */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--sys-glow);border:1px solid var(--sys-blue);color:var(--sys-blue);padding:10px 20px;border-radius:8px;font-size:13px;z-index:90;transition:.3s;font-weight:600}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+@media(min-width:481px){.app{max-width:480px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="info">
+      <span class="lv" id="totalLv">Lv.1</span>
+      <span class="player-name" id="playerName">林默</span>
+      <span class="title-badge" id="titleBadge">初醒者</span>
+      <div class="exp-bar"><div class="exp-fill" id="totalExpFill"></div></div>
+    </div>
+    <span class="streak" id="streakLabel">🔥 0天</span>
+  </div>
+  <div class="tab-content" id="tabContent"></div>
+  <div class="bottom-nav">
+    <div class="nav-item active" data-tab="home"><span class="nav-ico">🏠</span>首页</div>
+    <div class="nav-item" data-tab="schedule"><span class="nav-ico">📅</span>日程</div>
+    <div class="nav-item" data-tab="tasks"><span class="nav-ico">⚔️</span>任务</div>
+    <div class="nav-item" data-tab="story"><span class="nav-ico">📖</span>剧情</div>
+    <div class="nav-item" data-tab="history"><span class="nav-ico">📊</span>历史</div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="sys-label" id="modalSysLabel">【系统】</div>
+    <div class="big" id="modalIco">🌟</div>
+    <div class="title" id="modalTitle">属性觉醒！</div>
+    <div class="desc" id="modalDesc"></div>
+    <div class="btn" id="modalBtn">确认</div>
+  </div>
+</div>
+
+<div class="chapter-overlay" id="chapterOverlay">
+  <div class="modal">
+    <div class="sys-tag">【系统】新章节解锁</div>
+    <div class="big" id="chModalIco">📖</div>
+    <div class="title" id="chModalTitle"></div>
+    <div class="narrative" id="chModalNarrative"></div>
+    <div class="info-row" id="chModalInfo"></div>
+    <div class="btn" id="chModalBtn">继续旅程</div>
+  </div>
+</div>
+
+<div class="reminder-overlay" id="reminderOverlay">
+  <div class="card">
+    <div class="sys-header" id="remHeader"><span class="sys-icon">🔔</span>【系统】副本已开启</div>
+    <div class="narrative" id="remNarrative"></div>
+    <div class="actions">
+      <button class="btn-primary" id="remAccept">前往副本</button>
+      <button class="btn-skip" id="remSkip">稍后再说</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// =============================================
+// 章节数据（9章）
+// =============================================
+const CHAPTERS=[
+  {id:1,title:'觉醒之初',totalLvReq:1,
+   narrative:['你盯着眼前悬浮的蓝色光幕，手指试探性地触碰那些半透明的文字。它们像水波一样荡漾开去，然后又恢复了平静。','系统面板上的数值很低——低得有点可笑。气血Lv.0，精力Lv.0，金币Lv.0，智慧Lv.0。你苦笑了一下，原来在系统的眼里，你现在是这么弱小吗？','但光幕底部有一行字在微微发光：【完成初始任务，唤醒你的第一项属性】'],
+   goal:'任意1个属性达到Lv.1',unlockTitle:'初醒者',ability:'解锁「每日随机任务」功能'},
+  {id:2,title:'晨光中的第一步',totalLvReq:2,
+   narrative:['七天了。你已经习惯了每天早上醒来时，那片蓝色光幕准时出现在视野里。','更奇怪的是，你开始习惯按照系统提示去行动。早上拉开窗帘晒太阳的时候，你看到「精力+8」的字样在眼前一闪而过，嘴角不自觉地扬了起来。','原来变强这件事，真的会让人上瘾。'],
+   goal:'所有属性达到Lv.1',unlockTitle:'破晓行者',ability:'解锁「定时提醒」功能'},
+  {id:3,title:'身体的回响',totalLvReq:3,
+   narrative:['你发现自己的呼吸变得深了。以前爬三楼就喘，现在居然能一路走到公司还不觉得累。','系统面板上的「气血」数值在稳步上涨，每一次散步、每一次举铁，都不再是「为了健康」这种虚无的口号——而是实打实地看到经验条在增长。','你开始相信，这个系统或许真的在改变你。'],
+   goal:'气血属性达到Lv.3',unlockTitle:'血气觉醒者',ability:'解锁「气血恢复加速」'},
+  {id:4,title:'思维之光的闪烁',totalLvReq:4,
+   narrative:['今天工作时，你突然发现一个问题——你居然能集中注意力超过一个小时了。','以前这个时候，你早就已经打开了好几个无关网页，手指在键盘上机械地敲着，思绪却飘到了九霄云外。','系统面板上的「精力」和「智慧」在微微发光。你不确定是因果关系还是巧合，但你觉得，继续下去或许会发现更多。'],
+   goal:'精力和智慧均达到Lv.3',unlockTitle:'思维织网者',ability:'解锁「专注模式」'},
+  {id:5,title:'金币与价值的发现',totalLvReq:5,
+   narrative:['你完成了一个以前一直拖延的工作项目。主管拍了拍你的肩膀说「做得不错」的时候，你看到了系统提示：','【金币+15 · 技能熟练度提升】','原来「金币」并不是指真正的钱。它代表着你在这个世界中的「价值积累」——技能的提升、工作的成果、每一分努力的结晶。你开始重新审视自己每一天的产出。原来你比自己想象的更有价值。'],
+   goal:'金币属性达到Lv.5',unlockTitle:'价值探知者',ability:'解锁「双倍金币日」'},
+  {id:6,title:'连续之力的觉醒',totalLvReq:6,
+   narrative:['三十天了。你翻看系统面板上的历史记录，看到了自己这一个月来每一天的数据。','有些日子你只完成了三个任务，有些日子你全部打完。但最让你惊讶的不是某一天的数据，而是——你居然连续坚持了三十天。','以前的你，任何「好习惯」都坚持不过一周。而现在，系统面板上的连续打卡天数像一枚勋章，提醒着你：你正在变成另一个人。'],
+   goal:'连续打卡满30天',unlockTitle:'恒心持有者',ability:'解锁「连击奖励」'},
+  {id:7,title:'四属性的共鸣',totalLvReq:7,
+   narrative:['今天系统面板突然闪烁了一下，四行属性数值同时发出微弱的光芒。','你意识到，气血、精力、金币、智慧——它们不再是孤立的数值。当你的身体变得更强，你的精力就更充沛；当你的思维更敏锐，你的工作效率就更高；而当你的价值不断提升，你又有更多动力去照顾身体和心灵。','这是一个闭环。而你，正在这个闭环的中心。'],
+   goal:'所有属性达到Lv.6',unlockTitle:'四象共鸣者',ability:'解锁「共鸣加成」'},
+  {id:8,title:'命运的岔路口',totalLvReq:8,
+   narrative:['系统面板今天出现了一行你从未见过的文字：','【觉醒进度 78% · 即将触及世界真相】','你愣住了。「世界真相」？这个系统到底是什么？它从哪来？为什么选中了你？你试图用手去触碰那行文字，它却消散了，只留下一句低语般的声音：「继续变强……答案在你达到极限之时……」'],
+   goal:'任意1个属性达到Lv.8',unlockTitle:'命运窥视者',ability:'解锁「隐藏任务」'},
+  {id:9,title:'觉醒者的黎明',totalLvReq:9,
+   narrative:['系统面板的蓝色光芒今天格外明亮。你眯起眼睛，看到光幕上的文字在发生变化。','那些原本冰冷的数据和数值，突然间全都活了过来。你看到了——很久以前那个早晨，你第一次看到系统面板时的自己。那个颓废的、怀疑自己的、不知道明天在哪里的自己。然后你看到了现在的自己。','系统面板上浮现出最后一行字：【觉醒完成。你已不再是过去的你。但真正的旅程，才刚刚开始。】光芒散去，系统面板恢复了平静。但你知道，有些东西已经永远改变了。'],
+   goal:'所有属性达到Lv.8',unlockTitle:'觉醒完成者',ability:'解锁「新篇章预告」'}
+];
+
+// =============================================
+// 固定任务（叙事化副本描述）
+// =============================================
+const TASKS=[
+  {key:'morning',name:'晨光副本：寻找最初之光',sysLabel:'副本「晨间之光」已开启',
+   desc:'8:00起床，拉开窗帘让晨光洒入房间。阳光是自然界最基础的精力恢复药剂——坐窗边发呆也算充能成功。',
+   attr:'mp',xp:8,reward:'精力+8 · 解锁「白天不犯困」被动技能'},
+  {key:'walk',name:'归途副本：新手村的微风',sysLabel:'副本「归途」已开启',
+   desc:'18:30下班后，试着走路/散步回家，步数≥1500。晚风会带走一天的疲惫，气血经验在每一步中积累。',
+   attr:'hp',xp:10,reward:'气血+10 · 猫咪好感度+10'},
+  {key:'iron',name:'修炼副本：铁之试炼',sysLabel:'副本「铁之试炼」已开启',
+   desc:'20:30，哑铃或拉伸15分钟。这是提升气血上限的基础修炼，每一滴汗水都在铸造更强的你。',
+   attr:'hp',xp:8,reward:'气血+8 · 气血上限小幅提升'},
+  {key:'skill',name:'金币副本：点亮技能树',sysLabel:'副本「技能树」已开启',
+   desc:'21:00，学习工作技能30分钟。金币经验在知识的积累中悄悄增长，每一次学习都是在为未来充值。',
+   attr:'gold',xp:12,reward:'金币+12 · 技能熟练度+1'},
+  {key:'read',name:'智慧副本：古老的智慧残页',sysLabel:'副本「智慧残页」已开启',
+   desc:'21:30，读书5页或听播客10分钟。那些文字里藏着前人留下的智慧碎片，捡起它们，你的智慧会增长。',
+   attr:'wis',xp:6,reward:'智慧+6 · 洞察力微增'},
+  {key:'review',name:'存档副本：睡前存档点',sysLabel:'存档点「今日复盘」已出现',
+   desc:'22:00，给今天的自己打个分，记录2分钟。这是每日必须的存档仪式，防止经验流失。',
+   attr:'wis',xp:4,reward:'智慧+4 · 多巴胺+1'}
+];
+
+// =============================================
+// 属性定义（不变）
+// =============================================
+const ATTRS=[
+  {key:'hp',name:'气血',ico:'❤️',cls:'hp',thresholds:[0,20,50,90,140,200,280,380,500]},
+  {key:'mp',name:'精力',ico:'⚡',cls:'mp',thresholds:[0,16,40,72,112,160,224,304,400]},
+  {key:'gold',name:'金币',ico:'💰',cls:'gold',thresholds:[0,24,60,108,168,240,336,456,600]},
+  {key:'wis',name:'智慧',ico:'🧠',cls:'wis',thresholds:[0,12,30,54,84,120,168,228,300]}
+];
+
+// =============================================
+// 日程表
+// =============================================
+const SCHEDULE=[
+  {time:'08:00',name:'起床+拉开窗帘晒晨光',attr:'mp',tip:'系统副本「晨间之光」已开启'},
+  {time:'08:20',name:'喝水+简单早餐',attr:'hp',tip:'回血基础操作'},
+  {time:'09:00',name:'开始工作（主线副本）',attr:'gold',tip:'金币副本开启，认真刷怪'},
+  {time:'12:00',name:'午餐+短休（午睡≤30分）',attr:'rest',tip:'午睡超30分=精力debuff'},
+  {time:'13:00',name:'下午继续工作',attr:'gold',tip:'主线推进'},
+  {time:'18:30',name:'下班散步回家（归途副本）',attr:'hp',tip:'气血经验在每一步中积累'},
+  {time:'19:30',name:'晚饭',attr:'rest',tip:'补充体力'},
+  {time:'20:00',name:'饭后休息半小时',attr:'rest',tip:'消化+放松，给身体缓冲'},
+  {time:'20:30',name:'举铁/拉伸15分钟（铁之试炼）',attr:'hp',tip:'修炼副本，提升气血上限'},
+  {time:'21:00',name:'学习工作技能30分钟（技能树）',attr:'gold',tip:'金币副本，从史莱姆开始打'},
+  {time:'21:30',name:'读书5页/播客10分钟（智慧残页）',attr:'wis',tip:'智慧副本'},
+  {time:'22:00',name:'睡前打分（存档点）',attr:'wis',tip:'存档仪式，防止经验流失'},
+  {time:'22:30',name:'放下手机入睡',attr:'mp',tip:'系统休眠，明天日常刷新'}
+];
+
+// =============================================
+// 工作日随机任务池（15个）
+// =============================================
+const WEEKDAY_RANDOM=[
+  {name:'午间微风副本',desc:'【系统】你发现公司楼下的小公园在召唤。午休时下去走一圈，或许会有意外发现？',attr:'hp',xp:8},
+  {name:'茶水间的交际',desc:'【系统】同事向你求助。用你最近学到的技能帮他们一把，或许能收获意外的好感度？',attr:'gold',xp:10},
+  {name:'电梯里的觉察',desc:'【系统】今天试着走楼梯代替电梯。气血经验在每一步中悄悄积累……',attr:'hp',xp:6},
+  {name:'会议后的复盘',desc:'【系统】会议结束了。花3分钟记录下今天学到的1个新知识点，智慧经验+？',attr:'wis',xp:8},
+  {name:'键盘下的秘密',desc:'【系统】你发现键盘旁边有一本尘封已久的书。读一页，智慧经验悄然而至。',attr:'wis',xp:5},
+  {name:'通勤路上的见闻',desc:'【系统】今天试着走路/骑行一段路去上班。路上的风景或许能恢复些许精力？',attr:'mp',xp:7},
+  {name:'午餐的冒险',desc:'【系统】今天尝试一份没吃过的午餐。新的味觉体验也能带来微小的智慧经验？',attr:'wis',xp:4},
+  {name:'工间微操',desc:'【系统】连续工作1小时后，做5分钟伸展运动。气血经验在拉伸中恢复。',attr:'hp',xp:6},
+  {name:'邮件的仪式',desc:'【系统】清理一封积压的邮件，或回复一个拖延的消息。金币经验在效率中积累。',attr:'gold',xp:5},
+  {name:'傍晚的复盘',desc:'【系统】下班前花5分钟记录今天完成的3件事。智慧经验在总结中增长。',attr:'wis',xp:7},
+  {name:'同事的微笑',desc:'【系统】今天主动和一位同事打招呼。社交经验转化为金币经验。',attr:'gold',xp:4},
+  {name:'水杯的挑战',desc:'【系统】今天喝够8杯水。气血经验在每一次补水后默默增加。',attr:'hp',xp:5},
+  {name:'技能的碎片',desc:'【系统】用15分钟学习一个和工作相关的小技巧。金币经验在积累中闪光。',attr:'gold',xp:10},
+  {name:'晚风的邀请',desc:'【系统】下班后不要在工位拖延。早点离开，气血和精力都会感谢你。',attr:'mp',xp:6},
+  {name:'夜间的整理',desc:'【系统】睡前花5分钟整理明天的待办。智慧经验在规划中沉淀。',attr:'wis',xp:6}
+];
+
+// =============================================
+// 周末随机任务池（15个）
+// =============================================
+const WEEKEND_RANDOM=[
+  {name:'厨房的探险',desc:'【系统】你发现厨房里有一份食材残片。是否尝试制作一份恢复料理？',attr:'hp',xp:10},
+  {name:'公园的传送门',desc:'【系统】城市边缘有一个被遗忘的传送门（公园）。走进去散步30分钟，气血经验在微风中增长。',attr:'hp',xp:12},
+  {name:'房间的整理术',desc:'【系统】你的据点（房间）积累了太多杂物。整理30分钟，金币经验在整洁中闪现。',attr:'gold',xp:8},
+  {name:'书店的秘境',desc:'【系统】据点附近有一个知识秘境（书店）。进去逛20分钟，智慧经验会主动找你。',attr:'wis',xp:8},
+  {name:'咖啡店的支线',desc:'【系统】去一家没去过的咖啡店，坐30分钟。精力经验在悠闲中恢复。',attr:'mp',xp:10},
+  {name:'肢体的苏醒',desc:'【系统】今天尝试一种没做过的运动（瑜伽/跳绳/舞蹈）。气血经验在汗水中上涨。',attr:'hp',xp:12},
+  {name:'电影的启示',desc:'【系统】看一部你平时不会选类型的电影。智慧经验在故事中积累。',attr:'wis',xp:6},
+  {name:'老友的通讯',desc:'【系统】给一个很久没联系的朋友发条消息。社交经验转化为金币经验。',attr:'gold',xp:7},
+  {name:'市场的采购',desc:'【系统】去菜市场采购一周食材。金币经验在精打细算中增长。',attr:'gold',xp:6},
+  {name:'午后的小憩',desc:'【系统】午后找一处安静的地方小睡20分钟。精力经验在梦境中恢复。',attr:'mp',xp:8},
+  {name:'技能的深入学习',desc:'【系统】用1小时深入学习一项你感兴趣的技能。金币经验大幅提升。',attr:'gold',xp:15},
+  {name:'自然的召唤',desc:'【系统】去城市周边的自然景区走一走。气血和精力经验在天地之间同时恢复。',attr:'hp',xp:10},
+  {name:'志愿者的荣耀',desc:'【系统】参与一次线上或线下志愿活动。金币和智慧经验在助人后悄然增长。',attr:'wis',xp:10},
+  {name:'创作的能量',desc:'【系统】写一段文字/画一幅画/录一段音频。智慧经验在创造中流淌。',attr:'wis',xp:9},
+  {name:'夜晚的感恩',desc:'【系统】睡前记录今天发生的3件好事。智慧经验在感恩中沉淀。',attr:'wis',xp:7}
+];
+
+// =============================================
+// 定时提醒文案（6个时间点 × 3套）
+// =============================================
+const REMINDER_TEXTS={
+  '07:50':[
+    {sys:'副本「新的一天」已开启',narrative:['晨光透过窗帘缝隙洒入房间，你的系统面板微微震动。新的一天开始了，觉醒者。今天的你，会比昨天更强吗？']},
+    {sys:'副本「新的一天」已开启',narrative:['闹钟的铃声仿佛是某个远古钟塔的回响。你睁开眼睛，系统面板准时出现在视野中——今天，你要选择怎样的开始？']},
+    {sys:'副本「新的一天」已开启',narrative:['你从睡梦中醒来，第一眼看到的就是那片熟悉的蓝色光幕。它已经陪伴你走过了一段旅程，今天将是新篇章的第一行。']}
+  ],
+  '09:00':[
+    {sys:'主线副本「职场征途」已开启',narrative:['系统面板显示今日主线任务：职场征途。你的金币经验将在今天的工作中稳步积累，专注是最好的武器。']},
+    {sys:'主线副本「职场征途」已开启',narrative:['你踏入办公大楼的那一刻，系统面板闪过一行字：「主线副本加载完成。」今天的每一分钟专注，都在铸造你的价值。']},
+    {sys:'主线副本「职场征途」已开启',narrative:['咖啡的香气中，系统面板浮现任务提示。今天不是随意刷怪的日子——主线副本需要你全力以赴，觉醒者。']}
+  ],
+  '12:00':[
+    {sys:'副本「午间休憩」已开启',narrative:['阳光正好悬在天空的正中央。你的精力条在上午的奔波中消耗了不少，是时候找个地方补充一下了。']},
+    {sys:'副本「午间休憩」已开启',narrative:['系统面板闪烁了一下，提醒你：上半场表现如何？午间休整是重置状态的最佳时机，不要错过这个副本。']},
+    {sys:'副本「午间休憩」已开启',narrative:['你听到腹中传来一声低鸣——那是「饥饿DEBUFF」的前兆。系统提示：及时补充体力，下午的战线还很长。']}
+  ],
+  '18:30':[
+    {sys:'副本「归途」已开启',narrative:['下班的时间到了。系统面板跳出一行字：「主线副本已完成，是否开启支线「归途」？」外面的风在等你。']},
+    {sys:'副本「归途」已开启',narrative:['办公室灯光开始暗下来，同事们陆续离开。系统面板闪烁着暖黄色的光——那是「自由时间」的标识。归途中的风景，也是经验的一部分。']},
+    {sys:'副本「归途」已开启',narrative:['你站起身来，感受到久坐后身体的抗议。系统提示：气血经验正在等待你的脚步。走一段路回家吧，让经验条在晚风中悄悄上涨。']}
+  ],
+  '20:30':[
+    {sys:'副本「晚间修炼」已开启',narrative:['夜幕降临，城市灯火渐亮。系统面板上的「铁之试炼」正在闪烁。这是一天中完全属于你自己的修炼时间。']},
+    {sys:'副本「晚间修炼」已开启',narrative:['晚饭后的这段时光，仿佛被世界遗忘了一般安静。系统提示：正是打坐修炼的好时机。举铁、学习、阅读——每一次行动都在雕刻更强的你。']},
+    {sys:'副本「晚间修炼」已开启',narrative:['系统面板发出柔和的紫色光芒——那是「晚间任务」的标识。白天的喧嚣已经平息，现在是专注于自身进化的时刻，觉醒者。']}
+  ],
+  '22:00':[
+    {sys:'存档点「今日复盘」已出现',narrative:['系统面板弹出存档图标。今天你完成了多少任务？还有哪些副本没有通关？花两分钟记录一下，这是每日必须的存档仪式。']},
+    {sys:'存档点「今日复盘」已出现',narrative:['你的一天即将结束。系统提示：及时存档，防止进度丢失。给今天的自己打一个分吧——不是为了评判，而是为了看清来路。']},
+    {sys:'存档点「今日复盘」已出现',narrative:['系统面板上的存档点正在闪烁。今天的经验已经结算，但唯有复盘才能让这些经验真正沉淀为智慧。花两分钟，和今天的自己对话。']}
+  ]
+};
+
+// =============================================
+// 数据存储
+// =============================================
+const DB_KEY='rpg_awakening_v3';
+
+function migrateData(d){
+  // 确保所有新字段存在
+  d.currentChapter=d.currentChapter||1;
+  d.unlockedChapters=d.unlockedChapters||[1];
+  d.chapterRead=d.chapterRead||{};
+  d.dailyRandomTasks=d.dailyRandomTasks||[];
+  d.randomTaskDate=d.randomTaskDate||'';
+  d.playerName=d.playerName||'林默';
+  d.unlockedTitles=d.unlockedTitles||['初醒者'];
+  d.currentTitle=d.currentTitle||'初醒者';
+  d.reminderVersionIndex=d.reminderVersionIndex||{};
+  // 确保旧字段存在
+  d.attrXP=d.attrXP||{hp:0,mp:0,gold:0,wis:0};
+  d.tasks=d.tasks||{morning:false,walk:false,iron:false,skill:false,read:false,review:false};
+  d.lastDate=d.lastDate||'';
+  d.streak=d.streak||0;
+  d.streakAddedToday=d.streakAddedToday||false;
+  d.history=d.history||{};
+  d.seenLevelUps=d.seenLevelUps||{};
+  return d;
+}
+
+function loadData(){
+  try{const raw=localStorage.getItem(DB_KEY);if(raw)return migrateData(JSON.parse(raw));}catch(e){}
+  return migrateData({attrXP:{hp:0,mp:0,gold:0,wis:0},tasks:{morning:false,walk:false,iron:false,skill:false,read:false,review:false}});
+}
+function saveData(d){localStorage.setItem(DB_KEY,JSON.stringify(d))}
+function todayStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function yesterdayStr(){const d=new Date();d.setDate(d.getDate()-1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+
+// =============================================
+// 每日刷新 + 随机任务生成
+// =============================================
+function generateRandomTasks(data){
+  const today=todayStr();
+  if(data.randomTaskDate===today&&data.dailyRandomTasks.length>0)return;
+  const dayOfWeek=new Date().getDay();
+  const isWeekend=(dayOfWeek===0||dayOfWeek===6);
+  const pool=isWeekend?WEEKEND_RANDOM:WEEKDAY_RANDOM;
+  const numTasks=Math.random()>0.5?2:1;
+  const shuffled=[...pool].sort(()=>Math.random()-0.5);
+  data.dailyRandomTasks=shuffled.slice(0,numTasks).map((t,i)=>({
+    ...t,key:`random_${today}_${i}`,xp:t.xp+3,done:false
+  }));
+  data.randomTaskDate=today;
+  saveData(data);
+}
+
+function refreshDay(data){
+  const today=todayStr();
+  if(data.lastDate!==today){
+    if(data.lastDate)data.history[data.lastDate]={...data.tasks,randomTasks:data.dailyRandomTasks.map(t=>({key:t.key,done:t.done}))};
+    const yesterday=yesterdayStr();
+    const yHist=data.history[yesterday];
+    const yDone=yHist?(Object.values(yHist).some(v=>typeof v==='boolean'&&v)||yHist.randomTasks?.some(t=>t.done)):false;
+    if(data.lastDate!==yesterday&&data.streak>0)data.streak=0;
+    data.tasks={morning:false,walk:false,iron:false,skill:false,read:false,review:false};
+    data.streakAddedToday=false;
+    generateRandomTasks(data);
+    checkChapterProgress(data);
+    data.lastDate=today;
+    saveData(data);
+  }
+  return data;
+}
+
+// =============================================
+// 属性等级计算
+// =============================================
+function getAttrLevel(xp,th){let lv=0;for(let i=1;i<th.length;i++){if(xp>=th[i])lv=i;else break;}return lv;}
+function getAttrProgress(xp,th){const lv=getAttrLevel(xp,th);const c=th[lv]||0;const n=th[lv+1]||(th[th.length-1]+100);return{lv,curTh:c,nextTh:n,progress:Math.min((xp-c)/(n-c),1),xp};}
+function getTotalLevel(data){const ls=ATTRS.map(a=>getAttrLevel(data.attrXP[a.key],a.thresholds));return Math.min(...ls)<=0?1:Math.min(...ls)+1;}
+function getTotalProgress(data){const ls=ATTRS.map(a=>getAttrLevel(data.attrXP[a.key],a.thresholds));const minLv=Math.min(...ls);const weakest=ATTRS.find(a=>getAttrLevel(data.attrXP[a.key],a.thresholds)===minLv);if(!weakest)return 0;return getAttrProgress(data.attrXP[weakest.key],weakest.thresholds).progress;}
+
+// =============================================
+// 章节进度检查
+// =============================================
+function checkChapterProgress(data){
+  const tl=getTotalLevel(data);
+  CHAPTERS.forEach(ch=>{
+    if(tl>=ch.totalLvReq&&!data.unlockedChapters.includes(ch.id)){
+      data.unlockedChapters.push(ch.id);
+      data.currentChapter=ch.id;
+      data.chapterRead[ch.id]=false;
+      if(ch.unlockTitle&&!data.unlockedTitles.includes(ch.unlockTitle)){
+        data.unlockedTitles.push(ch.unlockTitle);
+        data.currentTitle=ch.unlockTitle;
+      }
+      // 显示章节解锁弹窗
+      showChapterModal(ch);
+      saveData(data);
+    }
+  });
+}
+
+function showChapterModal(ch){
+  document.getElementById('chModalTitle').textContent=`第${ch.id}章：${ch.title}`;
+  let html='';
+  ch.narrative.forEach(p=>{html+=`<p>${p}</p>`});
+  document.getElementById('chModalNarrative').innerHTML=html;
+  document.getElementById('chModalInfo').innerHTML=`称号：${ch.unlockTitle} | 觉醒能力：${ch.ability}`;
+  document.getElementById('chapterOverlay').classList.add('show');
+  document.getElementById('chModalBtn').onclick=()=>{
+    document.getElementById('chapterOverlay').classList.remove('show');
+    data.chapterRead[ch.id]=true;
+    saveData(data);
+    render();
+  };
+}
+
+// =============================================
+// 渲染
+// =============================================
+let data=loadData();
+data=refreshDay(data);
+let currentTab='home';
+
+function render(){
+  document.getElementById('totalLv').textContent='Lv.'+getTotalLevel(data);
+  document.getElementById('playerName').textContent=data.playerName;
+  document.getElementById('titleBadge').textContent=data.currentTitle;
+  const tp=getTotalProgress(data);
+  document.getElementById('totalExpFill').style.width=(tp*100)+'%';
+  document.getElementById('streakLabel').textContent='🔥 '+data.streak+'天';
+  renderContent();
+}
+
+function renderContent(){
+  const el=document.getElementById('tabContent');
+  switch(currentTab){
+    case 'home':el.innerHTML=renderHome();break;
+    case 'schedule':el.innerHTML=renderSchedule();break;
+    case 'tasks':el.innerHTML=renderTasks();break;
+    case 'story':el.innerHTML=renderStory();break;
+    case 'history':el.innerHTML=renderHistory();break;
+  }
+  bindEvents();
+}
+
+// ===== 首页 =====
+function renderHome(){
+  let html='';
+  // 当前章节
+  const ch=CHAPTERS.find(c=>c.id===data.currentChapter)||CHAPTERS[0];
+  html+=`<div class="chapter-card">
+    <div class="ch-title"><span class="num">第${ch.id}章</span>${ch.title}</div>
+    <div class="narrative">`;
+  html+=`<p>${ch.narrative[0]}</p>`;
+  html+=`</div>
+    <div class="goal">🎯 目标：${ch.goal}</div>
+    <div class="unlock">🏆 称号：${ch.unlockTitle} · 💡 ${ch.ability}</div>
+  </div>`;
+
+  // 属性
+  html+='<div class="attrs">';
+  ATTRS.forEach(a=>{
+    const p=getAttrProgress(data.attrXP[a.key],a.thresholds);
+    html+=`<div class="attr ${a.cls}"><div class="ico">${a.ico}</div><div class="right"><div class="name">${a.name}</div><div class="lvrow"><span class="lv-num">Lv.${p.lv}</span></div><div class="bar-wrap"><div class="bar-fill" style="width:${p.progress*100}%"></div></div><div class="exp-label">${data.attrXP[a.key]} / ${p.nextTh} XP</div></div></div>`;
+  });
+  html+='</div>';
+
+  // 升级提示
+  const tl=getTotalLevel(data);
+  const nextLv=tl+1;
+  const neededLv=nextLv-1;
+  html+=`<div class="sys-hint"><span class="sys-tag">【系统】</span>升级到Lv.${nextLv}需要所有属性达到Lv.${neededLv}<div class="conds">`;
+  ATTRS.forEach(a=>{
+    const p=getAttrProgress(data.attrXP[a.key],a.thresholds);
+    const met=p.lv>=neededLv;
+    html+=`<div class="cond"><span>${a.ico} ${a.name} Lv.${p.lv}</span><span class="tag ${met?'met':'unmet'}">${met?'达标':'需Lv.'+neededLv}</span></div>`;
+  });
+  html+='</div></div>';
+
+  // 今日快览
+  html+='<div style="margin-top:8px;font-size:13px;color:var(--sys-blue);padding-bottom:4px;font-weight:600"><span style="font-size:10px;background:var(--sys-glow);padding:1px 4px;border-radius:2px">【系统】</span> 今日副本快览</div>';
+  TASKS.forEach(t=>{
+    const done=data.tasks[t.key];
+    html+=`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.03)"><span style="color:${done?'var(--accent2)':'var(--muted)'}">${done?'✅':'⬜'}</span><span style="flex:1;${done?'color:var(--accent2);text-decoration:line-through;opacity:.7':''}">${t.name}</span><span style="font-size:11px;color:var(--${t.attr==='mp'?'mp':t.attr==='hp'?'hp':t.attr==='gold'?'gold':'wis'});font-weight:600">+${t.xp}</span></div>`;
+  });
+  // 随机任务快览
+  if(data.dailyRandomTasks.length>0){
+    html+='<div style="font-size:12px;color:var(--accent2);padding:4px 0;font-weight:600">⚡ 随机副本</div>';
+    data.dailyRandomTasks.forEach(t=>{
+      html+=`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;border-bottom:1px solid rgba(255,255,255,.03)"><span style="color:${t.done?'var(--accent2)':'var(--accent)'}">${t.done?'✅':'🎲'}</span><span style="flex:1;${t.done?'color:var(--accent2);text-decoration:line-through;opacity:.7':''}">${t.name}</span><span style="font-size:11px;color:var(--accent2);font-weight:600">+${t.xp}</span></div>`;
+    });
+  }
+  const doneCount=Object.values(data.tasks).filter(v=>v).length+(data.dailyRandomTasks.filter(t=>t.done).length);
+  html+=`<div style="text-align:center;padding:8px 0;font-size:13px;color:var(--sys-blue)">今日完成 ${doneCount}/${TASKS.length+data.dailyRandomTasks.length}</div>`;
+  return html;
+}
+
+// ===== 日程表 =====
+function renderSchedule(){
+  let html='<div style="padding:8px 0;font-size:15px;font-weight:600;color:var(--sys-blue)">📅 每日日程表</div>';
+  html+='<div class="schedule-wrap"><table class="schedule">';
+  SCHEDULE.forEach(s=>{
+    const cls=s.attr==='rest'?'rest':s.attr;
+    const label=s.attr==='rest'?'休整':ATTRS.find(a=>a.key===s.attr)?.name||s.attr;
+    html+=`<tr><td class="time">${s.time}</td><td class="task-name">${s.name}</td><td><span class="tag ${cls}">${label}</span></td></tr>`;
+  });
+  html+='</table></div>';
+  html+=`<div style="margin-top:12px;padding:12px;background:var(--card);border-radius:8px;font-size:12px;color:var(--muted);border-left:2px solid var(--sys-blue)">
+    <div style="color:var(--sys-blue);font-weight:600;margin-bottom:4px"><span style="font-size:10px;background:var(--sys-glow);padding:1px 4px;border-radius:2px">【系统】</span> 新手村铁律</div>
+    1. 不单挑大BOSS——只刷小怪<br>2. 挂机也算打怪——出门就算完成<br>3. 金币从史莱姆开始<br>4. ✅就是多巴胺<br>5. 1级有1级的快乐
+  </div>`;
+  return html;
+}
+
+// ===== 任务打卡 =====
+function renderTasks(){
+  let html='<div style="padding:8px 0;font-size:15px;font-weight:600;color:var(--sys-blue)">⚔️ 今日副本</div>';
+
+  // 随机任务区
+  if(data.dailyRandomTasks.length>0){
+    html+='<div class="random-zone"><div class="zone-title"><span class="blink">🎲</span>随机副本（今日限定）</div>';
+    data.dailyRandomTasks.forEach(t=>{
+      const aName=ATTRS.find(a=>a.key===t.attr)?.name||t.attr;
+      html+=`<div class="random-task ${t.done?'done':''}" data-rkey="${t.key}">
+        <div class="sys-label">【系统】随机副本</div>
+        <div class="tname">${t.name}</div>
+        <div class="desc">${t.desc}</div>
+        <div class="reward-row"><span class="xp-tag" style="color:var(--accent2)">+${t.xp} XP</span><span class="attr-tag">${aName}</span></div>
+      </div>`;
+    });
+    html+='</div>';
+  }
+
+  // 固定任务区
+  html+='<div style="font-size:13px;color:var(--sys-blue);font-weight:600;margin-bottom:6px">📋 每日副本</div>';
+  TASKS.forEach(t=>{
+    const done=data.tasks[t.key];
+    const aName=ATTRS.find(a=>a.key===t.attr)?.name||t.attr;
+    html+=`<div class="dungeon-task ${done?'done':''}" data-key="${t.key}">
+      <div class="top">
+        <div class="check">${done?'✓':''}</div>
+        <span class="tname">${t.name}</span>
+        <span class="sys-label">${t.sysLabel}</span>
+      </div>
+      <div class="desc">${t.desc}</div>
+      <div class="reward">掉落：${t.reward}</div>
+    </div>`;
+  });
+  return html;
+}
+
+// ===== 剧情 =====
+function renderStory(){
+  let html='<div style="padding:8px 0;font-size:15px;font-weight:600;color:var(--sys-blue)">📖 剧情篇章</div>';
+  html+=`<div style="font-size:12px;color:var(--muted);margin-bottom:10px">觉醒者：${data.playerName} · 称号：${data.currentTitle}</div>`;
+  CHAPTERS.forEach(ch=>{
+    const unlocked=data.unlockedChapters.includes(ch.id);
+    const isCurrent=ch.id===data.currentChapter;
+    const cls=`story-chapter ${unlocked?'':'locked'} ${isCurrent?'current':''}`;
+    html+=`<div class="${cls}" data-chid="${ch.id}">
+      <div class="ch-num">第${ch.id}章</div>
+      <div class="ch-title ${unlocked?'unlocked':'locked'}">${unlocked?ch.title:'🔒 未解锁'}</div>`;
+    if(unlocked){
+      html+=`<div class="ch-snippet">${ch.narrative[0].substring(0,50)}……</div>
+      <div class="ch-badge unlocked">🏆 ${ch.unlockTitle}</div>`;
+    }else{
+      html+=`<div class="ch-snippet">需要总等级达到 Lv.${ch.totalLvReq}</div>
+      <div class="ch-badge locked">🔒</div>`;
+    }
+    html+='</div>';
+  });
+  html+=`<div style="margin-top:16px;padding:12px;background:var(--card);border-radius:8px;font-size:12px;color:var(--muted)">
+    <div style="color:var(--sys-blue);font-weight:600;margin-bottom:4px"><span style="font-size:10px;background:var(--sys-glow);padding:1px 4px;border-radius:2px">【系统】</span> 已解锁称号</div>`;
+  data.unlockedTitles.forEach(t=>{
+    const isCurrent=t===data.currentTitle;
+    html+=`<span style="display:inline-block;padding:2px 8px;margin:2px;border-radius:4px;font-size:11px;${isCurrent?'background:rgba(255,180,84,.15);color:var(--accent);font-weight:600':'background:rgba(255,255,255,.05);color:var(--muted)'};cursor:pointer" data-title="${t}">${isCurrent?'⭐ ':''}${t}</span>`;
+  });
+  html+='</div>';
+  return html;
+}
+
+// ===== 历史 =====
+function renderHistory(){
+  let html='<div style="padding:8px 0;font-size:15px;font-weight:600;color:var(--sys-blue)">📊 打卡历史</div>';
+  const dates=Object.keys(data.history).sort().reverse();
+  if(!dates.length){
+    html+='<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px">还没有历史记录<br>完成今天的任务就会开始记录</div>';
+  }else{
+    dates.forEach(d=>{
+      const h=data.history[d];
+      const fixedCnt=Object.entries(h).filter(([k,v])=>typeof v==='boolean'&&v&&TASKS.some(t=>t.key===k)).length;
+      const randCnt=h.randomTasks?h.randomTasks.filter(t=>t.done).length:0;
+      const xpGain=TASKS.filter(t=>h[t.key]).reduce((s,t)=>s+t.xp,0)+(h.randomTasks?h.randomTasks.filter(t=>t.done).reduce((s,t)=>s+t.xp,0):0);
+      html+=`<div class="history-card"><span class="date">${d}</span><span class="cnt">✅${fixedCnt+randCnt}</span><span class="xp">+${xpGain}XP</span></div>`;
+    });
+  }
+  html+='<div style="padding:8px 0;font-size:14px;font-weight:600;color:var(--sys-blue);margin-top:10px">各属性累计经验</div>';
+  ATTRS.forEach(a=>{
+    const p=getAttrProgress(data.attrXP[a.key],a.thresholds);
+    html+=`<div class="attr ${a.cls}" style="margin-bottom:6px"><div class="ico">${a.ico}</div><div class="right"><div class="name">${a.name} Lv.${p.lv}</div><div class="bar-wrap"><div class="bar-fill" style="width:${p.progress*100}%"></div></div><div class="exp-label">累计 ${data.attrXP[a.key]} XP</div></div></div>`;
+  });
+  return html;
+}
+
+// =============================================
+// 事件绑定
+// =============================================
+function bindEvents(){
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    n.addEventListener('click',()=>{
+      currentTab=n.dataset.tab;
+      document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+      n.classList.add('active');
+      renderContent();
+    });
+  });
+  // 固定任务打卡
+  document.querySelectorAll('.dungeon-task').forEach(c=>{
+    c.addEventListener('click',()=>toggleTask(c.dataset.key,c));
+  });
+  // 随机任务打卡
+  document.querySelectorAll('.random-task').forEach(c=>{
+    c.addEventListener('click',()=>toggleRandomTask(c.dataset.rkey,c));
+  });
+  // 章节详情查看
+  document.querySelectorAll('.story-chapter:not(.locked)').forEach(c=>{
+    c.addEventListener('click',()=>{
+      const ch=CHAPTERS.find(ch=>ch.id===parseInt(c.dataset.chid));
+      if(ch)showChapterModal(ch);
+    });
+  });
+  // 称号切换
+  document.querySelectorAll('[data-title]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      data.currentTitle=el.dataset.title;
+      saveData(data);render();
+    });
+  });
+}
+
+// =============================================
+// 打卡逻辑
+// =============================================
+function toggleTask(key,el){
+  const wasDone=data.tasks[key];
+  data.tasks[key]=!wasDone;
+  const task=TASKS.find(t=>t.key===key);
+  if(data.tasks[key]){
+    data.attrXP[task.attr]+=task.xp;
+    if(!data.streakAddedToday){data.streak+=1;data.streakAddedToday=true;}
+  }else{
+    data.attrXP[task.attr]=Math.max(0,data.attrXP[task.attr]-task.xp);
+    if(!Object.values(data.tasks).some(v=>v)&&!data.dailyRandomTasks.some(t=>t.done)){
+      if(data.streakAddedToday){data.streak=Math.max(0,data.streak-1);data.streakAddedToday=false;}
+    }
+  }
+  checkAttrLevelUp(task.attr);
+  checkTotalLevelUp();
+  saveData(data);render();
+  if(data.tasks[key]&&el){el.classList.add('justDone');setTimeout(()=>el.classList.remove('justDone'),300);}
+}
+
+function toggleRandomTask(key,el){
+  const task=data.dailyRandomTasks.find(t=>t.key===key);
+  if(!task)return;
+  task.done=!task.done;
+  if(task.done){
+    data.attrXP[task.attr]+=task.xp;
+    if(!data.streakAddedToday){data.streak+=1;data.streakAddedToday=true;}
+  }else{
+    data.attrXP[task.attr]=Math.max(0,data.attrXP[task.attr]-task.xp);
+    if(!Object.values(data.tasks).some(v=>v)&&!data.dailyRandomTasks.some(t=>t.done)){
+      if(data.streakAddedToday){data.streak=Math.max(0,data.streak-1);data.streakAddedToday=false;}
+    }
+  }
+  checkAttrLevelUp(task.attr);
+  checkTotalLevelUp();
+  saveData(data);render();
+  if(task.done&&el){el.classList.add('justDone');setTimeout(()=>el.classList.remove('justDone'),300);}
+}
+
+function checkAttrLevelUp(attrKey){
+  const attr=ATTRS.find(a=>a.key===attrKey);
+  const p=getAttrProgress(data.attrXP[attrKey],attr.thresholds);
+  const lvKey=attrKey+'_lv_'+p.lv;
+  if(p.lv>0&&!data.seenLevelUps[lvKey]){
+    data.seenLevelUps[lvKey]=true;
+    showSysModal(`【系统】${attr.ico} ${attr.name}属性觉醒！`,`${attr.name} Lv.${p.lv-1} → Lv.${p.lv}\n\n系统面板检测到属性值突破阈值。${attr.name}经验已稳定积累，觉醒进度提升。`);
+    saveData(data);
+  }
+}
+
+function checkTotalLevelUp(){
+  const tl=getTotalLevel(data);
+  const lvKey='total_lv_'+tl;
+  if(tl>1&&!data.seenLevelUps[lvKey]){
+    data.seenLevelUps[lvKey]=true;
+    showSysModal('【系统】人物等级觉醒！',`总等级提升到 Lv.${tl}！所有属性已达到升级阈值。\n\n你感到系统面板的光芒更加明亮了。你离真相，又近了一步。`);
+    saveData(data);
+  }
+}
+
+function showSysModal(title,desc){
+  document.getElementById('modalSysLabel').textContent=title.split('】')[0]+'】';
+  document.getElementById('modalTitle').textContent=title.split('】')[1]||title;
+  document.getElementById('modalDesc').textContent=desc;
+  document.getElementById('modalIco').textContent='🌟';
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('modalBtn').onclick=()=>document.getElementById('overlay').classList.remove('show');
+}
+
+// =============================================
+// 定时提醒系统
+// =============================================
+function checkReminders(){
+  if(!data.remindersEnabled)return data.remindersEnabled??true;
+  const now=new Date();
+  const hhmm=`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const texts=REMINDER_TEXTS[hhmm];
+  if(!texts)return;
+  const today=todayStr();
+  const key=`reminded_${today}_${hhmm}`;
+  if(data[key])return;
+  // 轮换版本
+  const vi=data.reminderVersionIndex[hhmm]||0;
+  const version=texts[vi%texts.length];
+  data.reminderVersionIndex[hhmm]=(vi+1)%texts.length;
+  data[key]=true;
+  saveData(data);
+  showReminderModal(version);
+}
+
+function showReminderModal(version){
+  document.getElementById('remHeader').innerHTML=`<span class="sys-icon">🔔</span>【系统】${version.sys}`;
+  let html='';
+  version.narrative.forEach(p=>{html+=`<p>${p}</p>`});
+  document.getElementById('remNarrative').innerHTML=html;
+  document.getElementById('reminderOverlay').classList.add('show');
+  document.getElementById('remAccept').onclick=()=>{
+    document.getElementById('reminderOverlay').classList.remove('show');
+    currentTab='tasks';render();
+    document.querySelectorAll('.nav-item').forEach(n=>{
+      n.classList.toggle('active',n.dataset.tab==='tasks');
+    });
+  };
+  document.getElementById('remSkip').onclick=()=>document.getElementById('reminderOverlay').classList.remove('show');
+  // 尝试系统通知
+  if('Notification' in window && Notification.permission==='granted'){
+    try{new Notification(`【系统】${version.sys}`, {body:version.narrative[0],icon:'icon-192.png'});}catch(e){}
+  }
+}
+
+// =============================================
+// 初始化
+// =============================================
+data=refreshDay(data);
+render();
+
+// 请求通知权限
+if('Notification' in window && Notification.permission==='default'){
+  // 不立即请求，在首次打开提醒弹窗时请求
+}
+
+// 每分钟检查跨天刷新 + 提醒
+setInterval(()=>{
+  data=loadData();data=refreshDay(data);render();
+  checkReminders();
+},60000);
+
+// 初始提醒检查
+checkReminders();
+
+// PWA Service Worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(()=>console.log('PWA SW registered')).catch(()=>{});
+}
+</script>
+</body>
+</html>
